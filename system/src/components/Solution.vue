@@ -1,9 +1,9 @@
 <template>
   <div>
-    <NewTable @new-table-ready="continueIteration" :id="1" :table="makeFirstTable()" :outputColumn="outputColumn" :finished="false" />
+    <NewTable @new-table-ready="continueIteration" :id="1" :table="makeFirstTable()" :outputColumn="firstOutputColumn" :finished="false" />
     
-    <div v-for="num in numExtraTables" :key="num">
-      <NewTable @new-table-ready="continueIteration" :id="num + 1" :table="currentExtraTable" :outputColumn="outputColumn" :finished="finished" />
+    <div v-for="(table, index) in tables" :key="index">
+      <NewTable @new-table-ready="continueIteration" :id="index + 2" :table="table" :outputColumn="outputColumn" :finished="finished" />
     </div>
 
     <div v-if="solution" class="jumbotron jumbotron-fluid">
@@ -31,7 +31,8 @@ export default {
   data: function() {
     return {
       numExtraTables: 0,
-      currentExtraTable: [],
+      tables: [],
+      outputColumn: 0,
       finished: false,
       solution: null,
     };
@@ -45,7 +46,7 @@ export default {
       // O número de linhas sempre será o número de restrições técnicas + 1 (função objetivo, que é calcula em 'zLine')
       return this.data.trCoefficients.length;
     },
-    zLine() {
+    firstZLine() {
       let transformedValues = this.data.ofCoefficients.map(coefficient => coefficient * -1);
       let line = [1, ...transformedValues];
 
@@ -57,19 +58,19 @@ export default {
 
       return line;
     },
-    outputColumn() {
-      const zLine = [...this.zLine];
+    firstOutputColumn() {
+      const zLine = [...this.firstZLine];
       zLine.shift(); // Coluna Z
       zLine.pop(); // Termo Independente
 
-      return this.zLine.indexOf(Math.min(...zLine));
+      return this.firstZLine.indexOf(Math.min(...zLine));
     }
   },
   methods: {
     makeFirstTable() {
       if (this.method == "Simplex Padrão") {       
         let table = [];
-        table[0] = this.zLine;
+        table[0] = this.firstZLine;
 
         for (let i = 0; i < this.rows; i++) {
           table.push([0, ...this.data.trCoefficients[i], ...this.makeExtraVariables(i)]);
@@ -80,9 +81,18 @@ export default {
       }
     },
     makeExtraVariables(index) {
-      let elements = [...Array(this.data.numberVariables).fill(0), this.data.independentTerms[index]];
+      let elements = [...Array(this.data.trCoefficients.length).fill(0), this.data.independentTerms[index]];
       elements[index] = 1;
       return elements;
+    },
+    makeNextTable(table) {
+      const zLine = [...table[0]];
+      zLine.shift(); // Coluna Z
+      zLine.pop(); // Termo Independente
+      this.outputColumn = table[0].indexOf(Math.min(...zLine));
+
+      this.finished = false;
+      this.tables.push(table);
     },
     continueIteration(newTable) {
       const zLine = [...newTable[0]];
@@ -90,13 +100,12 @@ export default {
       zLine.pop(); // Termo Independente
 
       const hasNegative = zLine.some(number => number < 0);
-      window.console.log(`Linha de Z ainda possui valor negativo? ${hasNegative}`);
       if (hasNegative) {
-        // incrementa uma tabela e continua o processamento
+        this.makeNextTable(newTable);
       } else {
         this.finished = true;
-        this.currentExtraTable = newTable;
-        this.numExtraTables++;
+        this.tables.push(newTable);
+        window.console.log("Array de tabelas", this.tables);
 
         this.showResult(newTable[0]);
       }

@@ -33,8 +33,6 @@ export default {
   },
   methods: {
     generateSolution(dataToCalculate) {
-      window.console.log(dataToCalculate);
-
       const mustContinue = this.validateData(dataToCalculate);
       if (mustContinue) {
         this.methodUsed = this.defineMethod(dataToCalculate);
