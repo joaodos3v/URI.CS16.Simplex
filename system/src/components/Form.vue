@@ -158,8 +158,8 @@ export default {
       objective: "Maximizar",
       objectiveFunction: [0, 0],
       technicalRestrictions: [
-        [2, 1],
-        [1, 1],
+        [0, 0],
+        [0, 0],
       ],
       signals: ["<=", "<="],
       independentTerms: [0, 0],

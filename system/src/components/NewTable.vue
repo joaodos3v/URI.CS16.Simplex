@@ -18,6 +18,9 @@
         </tr>
       </tbody>
     </table>
+    <div v-show="!finished" class="col text-center mb-5">
+      <button @click="calculateSolution" class="col-6 btn btn-lg btn-info"><i class="fa fa-arrow-right" aria-hidden="true"></i> CONTINUAR</button>
+    </div>
   </div>
 </template>
 
@@ -29,10 +32,7 @@ export default {
     id: Number,
     table: Array,
     outputColumn: Number,
-  },
-  data: function() {
-    return {
-    };
+    finished: Boolean,
   },
   computed: {
     inputLine() {
@@ -49,11 +49,8 @@ export default {
         return result >= 0 ? result : 0;
       });
 
-      // Esse '+1' é feito porque no laço eu inicio com 1, então a linha da função objetivo não foi considerada
-      const inputLine = results.indexOf(Math.min(...results)) + 1;
-
-      this.calculateSolution();
-      return inputLine;
+      // Esse '+1' é feito porque no laço, o início é com 1, então a linha da função objetivo não foi considerada
+      return results.indexOf(Math.min(...results)) + 1;
     },
     pivot() {
       return this.table[this.inputLine][this.outputColumn];
@@ -61,7 +58,22 @@ export default {
   },
   methods: {
     calculateSolution() {
-      alert("sdusahduahds");
+      const pivotNumber = this.pivot;
+      const newPivotLine = this.table[this.inputLine].map(number => number / pivotNumber);
+      window.console.log(">>>>>>>>> Nova Linha Pivô", newPivotLine);
+
+      let newTable = [];
+      newTable[this.inputLine] = newPivotLine;
+      for (let i = 0; i < this.table.length; i++) {
+        if (i != this.inputLine) {
+          const tempLine = newPivotLine.map(number => number * (this.table[i][this.outputColumn] * -1));
+          const newLine = tempLine.map((number, index) => number + Number(this.table[i][index]));
+          newTable[i] = newLine;
+        }
+      }
+
+      window.console.log("Nova tabela pronta", newTable);
+      this.$emit("new-table-ready", newTable);
     }
   }
 };

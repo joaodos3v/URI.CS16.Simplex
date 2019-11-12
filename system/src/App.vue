@@ -5,7 +5,7 @@
       <Form @generate-solution="generateSolution" />
 
       <Alert v-if="methodUsed" :method="`Método utilizado: ${methodUsed}!`" description="Abaixo você irá encontrar a solução detalhada deste problema." />
-      <Solution v-if="methodUsed" :method="methodUsed" :data="dataToCalculate" />
+      <Solution @reset="resetApp" v-if="methodUsed" :method="methodUsed" :data="dataToCalculate" />
     </div>
   </div>
 </template>
@@ -67,6 +67,10 @@ export default {
       } else {
         // aqui seria o método "M Grande" ou "Função Objetivo Auxiliar"
       }
+    },
+    resetApp() {
+      this.methodUsed = "";
+      this.dataToCalculate = {};
     }
   }
 };
