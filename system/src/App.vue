@@ -39,37 +39,34 @@ export default {
         this.dataToCalculate = dataToCalculate;
       }
     },
+    validateData(data) {
+      const { min, independentTerms, ofCoefficients, trCoefficients } = data;
+      if (independentTerms.length < min || ofCoefficients.length < min || trCoefficients.length < min) {
+        this.showToasted("É necessário que ao menos duas variáveis sejam utilizadas!", "error", "times-circle");
+        return false;
+      }
+      return true;
+    },
+    defineMethod(data) {
+      const { signals, objective } = data;
+      const diffLessOrEqual = signals.filter(signal => signal != "<=");
+
+      if (diffLessOrEqual.length == 0 && objective.toLowerCase() == "maximizar") {
+        return "Simplex Padrão";
+      } else {
+        return "M Grande";
+      }
+    },
+    resetApp() {
+      this.methodUsed = "";
+      this.dataToCalculate = {};
+    },
     showToasted(text, type = "info", icon = "fa-exclamation-circle") {
       this.$toasted.show(text, {
         type: type,
         icon: icon
       });
     },
-    validateData(data) {
-      const { min, independentTerms, ofCoefficients, trCoefficients } = data;
-
-      // O mínimo que eu estipulei para realizar o cálculo são duas variáveis
-      if (independentTerms.length < min || ofCoefficients.length < min || trCoefficients.length < min) {
-        this.showToasted("É necessário que ao menos duas variáveis sejam utilizadas!", "error", "times-circle");
-        return false;
-      }
-
-      return true;
-    },
-    defineMethod(data) {
-      const { signals, objective } = data;
-
-      const diffLessOrEqual = signals.filter(signal => signal != "<=");
-      if (diffLessOrEqual.length == 0 && objective.toLowerCase() == "maximizar") {
-        return "Simplex Padrão";
-      } else {
-        // aqui seria o método "M Grande" ou "Função Objetivo Auxiliar"
-      }
-    },
-    resetApp() {
-      this.methodUsed = "";
-      this.dataToCalculate = {};
-    }
   }
 };
 </script>

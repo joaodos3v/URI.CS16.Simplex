@@ -46,7 +46,7 @@ export default {
       
       const results = independentTerms.map((elm, idx) => {
         const result = elm / column[idx];
-        return result >= 0 ? result : 0;
+        return result >= 0 ? result : Number.POSITIVE_INFINITY;
       });
 
       // Esse '+1' é feito porque no laço, o início é com 1, então a linha da função objetivo não foi considerada
