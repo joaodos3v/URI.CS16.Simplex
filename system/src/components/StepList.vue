@@ -40,7 +40,14 @@ export default {
       for (let i = 0; i < this.table.length; i++) {
         if (i != this.outputLineIndex) {
           const tempLine = newPivotLine.map(number => number * (this.table[i][this.inputColumnIndex] * -1));
-          const newLine = tempLine.map((number, index) => number + Number(this.table[i][index]));
+          const newLine = tempLine.map((number, index) => {
+            const currentElm = this.table[i][index];
+            if (Number.isInteger(currentElm) || typeof currentElm == "number" || !currentElm.match(/[a-z]/i)) {
+              return number + Number(currentElm);
+            } else {
+              return currentElm;
+            }
+          });
           const caption = i === 0 ? "LINHA Z" : `${i}ª LINHA`;
           const newStep = [
             ["NLP: ", ...newPivotLine],

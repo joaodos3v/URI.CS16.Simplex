@@ -48,10 +48,10 @@ export default {
       return true;
     },
     defineMethod(data) {
-      const { signals, objective } = data;
+      const { signals } = data;
       const diffLessOrEqual = signals.filter(signal => signal != "<=");
 
-      if (diffLessOrEqual.length == 0 && objective.toLowerCase() == "maximizar") {
+      if (diffLessOrEqual.length == 0) {
         return "Simplex Padrão";
       } else {
         return "M Grande";
