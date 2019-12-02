@@ -1,9 +1,8 @@
 <template>
   <div>
-    <NewTable @new-table-ready="continueIteration" :id="1" :table="makeFirstTable()" :outputColumn="firstOutputColumn" :finished="false" />
-    
-    <div v-for="(table, index) in tables" :key="index">
-      <NewTable @new-table-ready="continueIteration" :id="index + 2" :table="table" :outputColumn="outputColumn" :finished="finished" />
+    <div v-for="(iteration, index) in iterations" :key="index">
+      <NewTable @new-table-ready="continueIteration" :id="index + 1" :table="iteration.table" 
+        :inputColumnIndex="iteration.inputColumnIndex" :outputLineIndex="iteration.outputLineIndex" :finished="finished" />
     </div>
 
     <div v-if="solution" class="jumbotron jumbotron-fluid">
@@ -21,22 +20,31 @@ import NewTable from "./NewTable";
 
 export default {
   name: "Solution",
+
   components: {
     NewTable
   },
+
   props: {
     method: String,
     data: Object
   },
+
+  created() {      
+    this.zLine = this._getInitialZLine();
+    const inputColumnIndex = this._getInputColumnIndex();
+    this.makeFirstTable(inputColumnIndex);
+  },
+
   data: function() {
     return {
-      numExtraTables: 0,
-      tables: [],
-      outputColumn: 0,
-      finished: false,
+      iterations: [],
       solution: null,
+      zLine: [],
+      finished: false,
     };
   },
+
   computed: {
     columns() {
       // O número de colunas sempre será o número de restrições (variáveis de folga) + o número de variáveis + 2 (coluna de Z e coluna de termos independentes)
@@ -46,36 +54,68 @@ export default {
       // O número de linhas sempre será o número de restrições técnicas + 1 (função objetivo, que é calcula em 'zLine')
       return this.data.trCoefficients.length;
     },
-    firstZLine() {
-      let transformedValues = this.data.ofCoefficients.map(coefficient => coefficient * -1);
-      let line = [1, ...transformedValues];
+  },
 
+  methods: {
+    showResult(zLine) {
+      this.solution = zLine[zLine.length - 1];
+    },
+    reset() {
+      this.iterations = [];
+      this.solution = null;
+      this.zLine = [];
+      this.finished = false;
+      this.$emit("reset");
+    },
+    _getInitialZLine() {
+      let transformedValues = this.data.ofCoefficients.map(coefficient => coefficient * -1);
+      let initialZLine = [1, ...transformedValues];
       for (let i = 0; i < this.columns; i++) {
-        if (!line[i]) {
-          line[i] = 0;
+        if (!initialZLine[i]) {
+          initialZLine[i] = 0;
         }
       }
 
-      return line;
+      return initialZLine;
     },
-    firstOutputColumn() {
-      const zLine = [...this.firstZLine];
-      zLine.shift(); // Coluna Z
-      zLine.pop(); // Termo Independente
+    _getZLine(row) {
+      const zLine = [...row];
+      zLine.shift();  // Coluna Z
+      zLine.pop();    // Termo Independente
+      return zLine;
+    },
+    _getInputColumnIndex() {
+      const zLineCoefficients = this._getZLine(this.zLine);
+      return this.zLine.indexOf(Math.min(...zLineCoefficients));
+    },
+    _getOutputLineIndex(inputColumnIndex, independentTerms, tableRows) {
+      let inputColumnElements = [];
+      for (let i = 0; i < tableRows.length; i++) {
+        inputColumnElements.push(tableRows[i][inputColumnIndex]); 
+      }
 
-      return this.firstZLine.indexOf(Math.min(...zLine));
-    }
-  },
-  methods: {
-    makeFirstTable() {
+      const results = independentTerms.map((elm, idx) => {
+        const result = elm / inputColumnElements[idx];
+        return result >= 0 ? result : Number.POSITIVE_INFINITY;
+      });
+
+      return results.indexOf(Math.min(...results)) + 1;
+    },
+
+
+    makeFirstTable(inputColumnIndex) {
       if (this.method == "Simplex Padrão") {       
         let table = [];
-        table[0] = this.firstZLine;
-
+        table[0] = this.zLine;
         for (let i = 0; i < this.rows; i++) {
           table.push([0, ...this.data.trCoefficients[i], ...this.makeExtraVariables(i)]);
         }
-        return table;
+
+        const { independentTerms } = this.data;
+        const tableRows = table.slice(1);
+        const outputLineIndex = this._getOutputLineIndex(inputColumnIndex, independentTerms, tableRows);
+
+        this.iterations.push({ table, inputColumnIndex, outputLineIndex });
       } else {
         return null;
       }
@@ -86,36 +126,27 @@ export default {
       return elements;
     },
     makeNextTable(table) {
-      const zLine = [...table[0]];
-      zLine.shift(); // Coluna Z
-      zLine.pop(); // Termo Independente
-      this.outputColumn = table[0].indexOf(Math.min(...zLine));
+      this.zLine = table[0];
+      const inputColumnIndex = this._getInputColumnIndex();
 
-      this.finished = false;
-      this.tables.push(table);
+      const tableRows = table.slice(1);
+      const independentTerms = tableRows.map(row => row[row.length - 1]);
+      const outputLineIndex = this._getOutputLineIndex(inputColumnIndex, independentTerms, tableRows);
+
+      this.iterations.push({ table, inputColumnIndex, outputLineIndex });
+      window.console.log(`=> [Next] Col Entra: ${inputColumnIndex} | Lin Sai: ${outputLineIndex}`);
     },
     continueIteration(newTable) {
-      const zLine = [...newTable[0]];
-      zLine.shift(); // Coluna Z
-      zLine.pop(); // Termo Independente
-
+      const zLine = this._getZLine(newTable[0]);
       const hasNegative = zLine.some(number => number < 0);
       if (hasNegative) {
         this.makeNextTable(newTable);
       } else {
         this.finished = true;
-        this.tables.push(newTable);
-        window.console.log("Array de tabelas", this.tables);
-
+        this.iterations.push({ table: newTable, inputColumnIndex: null, outputLineIndex: null });
         this.showResult(newTable[0]);
       }
     },
-    showResult(zLine) {
-      this.solution = zLine[zLine.length - 1];
-    },
-    reset() {
-      this.$emit("reset");
-    }
   }
 };
 </script>

@@ -6,73 +6,64 @@
         <tr v-for="(row, rIndex) in table" :key="rIndex">
           <td class="text-center" v-for="(number, nIndex) in row" :key="nIndex"
             :class="[
-              {'edge-horizontal': nIndex == 0 || nIndex == row.length - 1},
-              {'edge-vertical': rIndex == 0},
+              {'edge-vertical': nIndex == 0 || nIndex == row.length - 1},
+              {'edge-horizontal': rIndex == 0},
               {'edge-bottom': rIndex == table.length - 1},
-              {'output': nIndex == outputColumn},
-              {'input': rIndex == inputLine},
-              {'pivot': nIndex == outputColumn && rIndex == inputLine},
+              {'output': nIndex == inputColumnIndex},
+              {'input': rIndex == outputLineIndex},
+              {'pivot': nIndex == inputColumnIndex && rIndex == outputLineIndex},
             ]">
             {{ number }}
           </td>
         </tr>
       </tbody>
     </table>
-    <div v-show="!finished" class="col text-center mb-5">
-      <button @click="calculateSolution" class="col-6 btn btn-lg btn-info"><i class="fa fa-arrow-right" aria-hidden="true"></i> CONTINUAR</button>
+    <div class="col text-center mb-5">
+      <StepList :table="table" :pivot="pivot" :inputColumnIndex="inputColumnIndex" :outputLineIndex="outputLineIndex" />
+      <button v-if="!finished" @click="calculateSolution" class="col-6 btn btn-lg btn-info"><i class="fa fa-arrow-right" aria-hidden="true"></i> CONTINUAR</button>
     </div>
   </div>
 </template>
 
 
 <script>
+import StepList from "./StepList";
+
 export default {
   name: "NewTable",
+
+  components: {
+    StepList
+  },
+
   props: {
     id: Number,
     table: Array,
-    outputColumn: Number,
     finished: Boolean,
+    inputColumnIndex: Number,
+    outputLineIndex: Number,
   },
-  computed: {
-    inputLine() {
-      let column = [];
-      let independentTerms = [];
-      for (let i = 1; i < this.table.length; i++) {
-        const row = this.table[i];
-        column.push(row[this.outputColumn]);
-        independentTerms.push(row[row.length - 1]);
-      }
-      
-      const results = independentTerms.map((elm, idx) => {
-        const result = elm / column[idx];
-        return result >= 0 ? result : Number.POSITIVE_INFINITY;
-      });
 
-      // Esse '+1' é feito porque no laço, o início é com 1, então a linha da função objetivo não foi considerada
-      return results.indexOf(Math.min(...results)) + 1;
-    },
+  computed: {
     pivot() {
-      return this.table[this.inputLine][this.outputColumn];
+      return (this.outputLineIndex && this.inputColumnIndex) ? Number(this.table[this.outputLineIndex][this.inputColumnIndex]) : null;
     }
   },
+
   methods: {
     calculateSolution() {
-      const pivotNumber = this.pivot;
-      const newPivotLine = this.table[this.inputLine].map(number => number / pivotNumber);
-      window.console.log(">>>>>>>>> Nova Linha Pivô", newPivotLine);
+      const newPivotLine = this.table[this.outputLineIndex].map(number => number / this.pivot);
 
       let newTable = [];
-      newTable[this.inputLine] = newPivotLine;
+      newTable[this.outputLineIndex] = newPivotLine;
       for (let i = 0; i < this.table.length; i++) {
-        if (i != this.inputLine) {
-          const tempLine = newPivotLine.map(number => number * (this.table[i][this.outputColumn] * -1));
+        if (i != this.outputLineIndex) {
+          const tempLine = newPivotLine.map(number => number * (this.table[i][this.inputColumnIndex] * -1));
           const newLine = tempLine.map((number, index) => number + Number(this.table[i][index]));
           newTable[i] = newLine;
         }
       }
 
-      window.console.log("Nova tabela pronta", newTable);
       this.$emit("new-table-ready", newTable);
     }
   }
@@ -81,29 +72,29 @@ export default {
 
 
 <style scoped>
-.edge-vertical {
-  border-top: 2px solid black!important;
-  border-bottom: 2px solid black!important;
-}
+  .edge-vertical {
+    border-left: 2px solid black!important;
+    border-right: 2px solid black!important;
+  }
 
-.edge-horizontal {
-  border-left: 2px solid black!important;
-  border-right: 2px solid black!important;
-}
+  .edge-horizontal {
+    border-top: 2px solid black!important;
+    border-bottom: 2px solid black!important;
+  }
 
-.edge-bottom {
-  border-bottom: 2px solid black!important;
-}
+  .edge-bottom {
+    border-bottom: 2px solid black!important;
+  }
 
-.output {
-  background-color: #94ccdd;
-}
+  .output {
+    background-color: #99cddd;
+  }
 
-.input {
-  background-color: #67bad3;
-}
+  .input {
+    background-color: #99cddd;
+  }
 
-.pivot {
-  border: 4px solid #080895!important;
-}
+  .pivot {
+    border: 4px solid #080895;
+  }
 </style>

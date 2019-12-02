@@ -95,7 +95,7 @@
                   <h4 class="ml-5">
                     {{ objective }} Z =
                     <span v-for="(x, key) in objectiveFunction" :key="key">
-                      <span v-if="x.length > 0 && x != 0">
+                      <span v-if="objectiveFunction.length > 0 && x != 0">
                         <span v-if="x > 0"> +{{ x }}x{{ key + 1 }} </span>
                         <span v-else> {{ x }}x{{ key + 1 }} </span>
                       </span>
