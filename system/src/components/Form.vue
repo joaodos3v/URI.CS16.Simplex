@@ -85,7 +85,7 @@
                       </select>
                     </div>
                     <div class="col-2">
-                      <input type="number" class="form-control" v-model="independentTerms[rIndex]">
+                      <input type="number" class="form-control" v-model="independentTerms[rIndex]" @blur="solveDisable = false">
                     </div>
                   </div> 
                 </div>
@@ -122,7 +122,7 @@
                     </div>
                   </h5>
                   <div class="row mt-3">
-                    <button @click="solve" class="btn btn-dark btn-block align-text-bottom">
+                    <button @click="solve" :disabled="solveDisable" class="btn btn-dark btn-block align-text-bottom">
                       <i class="fa fa-calculator" aria-hidden="true"></i> RESOLVER
                     </button>
                   </div>
@@ -153,6 +153,7 @@ export default {
       min: 2,
       max: 4,
       restrictions: 2,
+      solveDisable: true,
 
       // Dados
       objective: "Maximizar",
@@ -195,6 +196,19 @@ export default {
       this.technicalRestrictions.pop();
     },
     solve() {
+      const ofCoefficients = this.objectiveFunction.filter(coefficient => coefficient && coefficient != 0);
+      const trCoefficients = this.technicalRestrictions.filter(coefficient => coefficient && coefficient != 0);
+      const independentTerms = this.independentTerms.filter(coefficient => coefficient && coefficient != 0);
+
+      if (ofCoefficients.length < 2 || trCoefficients.length < 2 || independentTerms.length < 2) {
+        this.$toasted.show("Você precisa informar, ao menos, dois valores válidos na função objetivo, nas restrições técnicas e nos termos independentes!", {
+          type: "error",
+          icon: "times-circle"
+        });
+
+        return;
+      }
+
       let dataToCalculate = {
         min: this.min,
         numberVariables: this.variables,
