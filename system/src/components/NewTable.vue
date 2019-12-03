@@ -1,7 +1,12 @@
 <template>
   <div class="container-fluid mb-5">
     <h5>Tabela #{{ id }}</h5>
-    <table class="table">
+    <table class="table table-borderless">
+      <thead>
+        <tr>
+          <th class="text-center" v-for="label in labels" :key="label">{{ label }}</th>
+        </tr>
+      </thead>
       <tbody>
         <tr v-for="(row, rIndex) in table" :key="rIndex">
           <td class="text-center" v-for="(number, nIndex) in row" :key="nIndex"
@@ -42,6 +47,7 @@ export default {
     finished: Boolean,
     inputColumnIndex: Number,
     outputLineIndex: Number,
+    labels: Array,
   },
 
   computed: {

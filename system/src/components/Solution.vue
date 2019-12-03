@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-for="(iteration, index) in iterations" :key="index">
-      <NewTable @new-table-ready="continueIteration" :id="index + 1" :table="iteration.table" 
+      <NewTable @new-table-ready="continueIteration" :id="index + 1" :table="iteration.table" :labels="columnLabels"
         :inputColumnIndex="iteration.inputColumnIndex" :outputLineIndex="iteration.outputLineIndex" :finished="finished" />
     </div>
 
@@ -32,6 +32,7 @@ export default {
 
   created() {      
     this.currentMethod = this.method;
+    this.columnLabels = this.createColumnLabels();
 
     this.zLine = this._getInitialZLine();
     const inputColumnIndex = this._getInputColumnIndex();
@@ -44,6 +45,7 @@ export default {
       solution: null,
       zLine: [],
       finished: false,
+      columnLabels: [],
       mLargePositions: [],
       mLargeCurrentPosition: 0,
       currentMethod: "",
@@ -226,6 +228,7 @@ export default {
             // NÃO EXISTEM MAIS variáveis básicas e ainda existe nº negativo na linha de Z...
             const refactoredTable = this.refactorTableAfterMLarge(newTable);
             this.currentMethod = "Simplex Padrão";
+            this.columnLabels = this.createColumnLabels();
             this.makeNextTable(refactoredTable);
           } else {
             // NÃO EXISTEM MAIS variáveis básicas E NÃO existe nº negativo na linha de Z...
@@ -287,6 +290,28 @@ export default {
       
       return refactoredTable;    
     },
+    createColumnLabels() {
+      let labels = ["Z"];
+      for (let i = 1; i <= this.data.numberVariables; i++) {
+        labels.push(`x${i}`);
+      }
+
+      const occurrencesDiffEqual = this.data.signals.filter(signal => signal != "=");
+      for (let i = 1; i <= occurrencesDiffEqual.length; i++) {
+        labels.push(`xF${i}`);
+      }
+
+      if (this.currentMethod == "M Grande") {
+        this.data.signals.forEach((element, idx) => {
+          if (element === ">=" || element === "=") {
+            labels.push(`a${idx + 1}`);
+          }
+        });
+      }
+
+      labels.push("b");
+      return labels;
+    }
   }
 };
 </script>
