@@ -8,6 +8,38 @@
     <div v-if="solution" class="jumbotron jumbotron-fluid">
       <div class="container text-center">
         <h1 class="display-8">Solução Ótima (valor de Z) = {{ solution }}</h1>
+        <div v-if="'vb' in variablesTable && 'vnb' in variablesTable" class="container mt-2 mb-2">
+          <div class="row">
+            <div class="col">
+              <table class="table table-bordered table-hover">
+                <thead class="thead-light">
+                  <tr>
+                    <th scope="col"><span class="font-weight-bold">Variáveis Básicas (VB)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="basic in variablesTable.vb" :key="basic">
+                    <td>{{ basic }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col">
+              <table class="table table-bordered table-hover">
+                <thead class="thead-light">
+                  <tr>
+                    <th scope="col"><span class="font-weight-bold">Variáveis Não-Básicas (VNB)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="nonBasic in variablesTable.vnb" :key="nonBasic">
+                    <td>{{ nonBasic }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
         <hr class="my-4">
         <button @click="reset" class="btn btn-lg btn-dark"><i class="fa fa-refresh" aria-hidden="true"></i> NOVO CÁLCULO</button>
       </div>
@@ -49,6 +81,7 @@ export default {
       mLargePositions: [],
       mLargeCurrentPosition: 0,
       currentMethod: "",
+      variablesTable: {},
     };
   },
 
@@ -81,6 +114,7 @@ export default {
     finishCalculation(lastTable, result) {
       this.finished = true;
       this.iterations.push({ table: lastTable, inputColumnIndex: null, outputLineIndex: null });
+      this.createVariablesTable(lastTable);
       this.showResult(result);
     },
     reset() {
@@ -88,6 +122,11 @@ export default {
       this.solution = null;
       this.zLine = [];
       this.finished = false;
+      this.columnLabels = [];
+      this.mLargePositions = [];
+      this.mLargeCurrentPosition = 0;
+      this.currentMethod = "";
+      this.variablesTable = {};
       this.$emit("reset");
     },
     _getInitialZLine() {
@@ -116,14 +155,14 @@ export default {
 
       return initialZLine;
     },
-    _getZLine(row) {
-      const zLine = [...row];
-      zLine.shift();  // Coluna Z
-      zLine.pop();    // Termo Independente
-      return zLine;
+    _prepareLine(row) {
+      const line = [...row];
+      line.shift();  // Coluna Z
+      line.pop();    // Termo Independente
+      return line;
     },
     _getInputColumnIndex() {
-      const zLineCoefficients = this._getZLine(this.zLine);
+      const zLineCoefficients = this._prepareLine(this.zLine);
 
       if (this.currentMethod == "M Grande") {
         let zLineCoefficientsWithoutM = zLineCoefficients.filter(elm => typeof elm === "number" && isFinite(elm));
@@ -208,10 +247,9 @@ export default {
       const outputLineIndex = this._getOutputLineIndex(inputColumnIndex, independentTerms, tableRows);
 
       this.iterations.push({ table, inputColumnIndex, outputLineIndex });
-      window.console.log(`=> [Next] Col Entra: ${inputColumnIndex} | Lin Sai: ${outputLineIndex}`);
     },
     continueIteration(newTable) {
-      const zLine = this._getZLine(newTable[0]);
+      const zLine = this._prepareLine(newTable[0]);
       const hasNegative = zLine.some(number => number < 0);
 
       if (this.currentMethod == "Simplex Padrão") {
@@ -311,7 +349,39 @@ export default {
 
       labels.push("b");
       return labels;
-    }
+    },
+    createVariablesTable(lastTable) {
+      let independentTerms = [];
+      let columns = [];
+      for (let i = 0; i < lastTable.length; i++) {
+        const row = this._prepareLine(lastTable[i]);
+        independentTerms.push(lastTable[i][row.length + 1]);
+        for (let j = 0; j < row.length; j++) {
+          const element = row[j];
+          if (!columns[j]) columns[j] = [];
+          columns[j].push(element);
+        }
+      }
+
+      let basic = [];
+      let nonBasic = [];
+      const labels = this._prepareLine(this.columnLabels);
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+        const hasDiff = column.some(coefficient => coefficient < 0 || coefficient > 1);
+        if (hasDiff) {
+          nonBasic.push(`${labels[i]} = 0`);
+        } else {
+          const amountOfOne = column.filter(coefficient => coefficient == 1);
+          if (amountOfOne.length == 1) {
+            const position = column.indexOf(1);
+            basic.push(`${labels[i]} = ${independentTerms[position]}`);
+          }
+        }
+      }
+
+      this.variablesTable = {vb: basic, vnb: nonBasic};
+    },
   }
 };
 </script>
